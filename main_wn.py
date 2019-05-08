@@ -13,7 +13,7 @@ import torchvision.transforms as transforms
 import os
 import argparse
 
-from models import resnet
+from models import resnet_wn
 from utils import progress_bar
 from weight_util import TernarizeOp
 
@@ -65,7 +65,7 @@ print('==> Building model..')
 # net = DPN92()
 # net = ShuffleNetG2()
 # net = SENet18()
-net = resnet.ResNet18()
+net = resnet_wn.ResNet18()
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
@@ -82,7 +82,7 @@ if args.resume:
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-tern_op = TernarizeOp(net)
+tern_op = TernarizeOp(net, True)
 
 # Training
 def train(epoch):

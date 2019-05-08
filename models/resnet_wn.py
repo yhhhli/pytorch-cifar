@@ -9,6 +9,7 @@ Reference:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.utils import weight_norm
 
 
 def ActQuantization(x):
@@ -55,6 +56,7 @@ class BasicBlock(nn.Module):
         out = out * self.gamma3 + self.beta3
         return out
 
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -99,6 +101,8 @@ class ResNet(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                m = weight_norm(m)
+
             elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
