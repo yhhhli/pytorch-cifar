@@ -16,6 +16,7 @@ import argparse
 from models import resnet
 from utils import progress_bar
 from weight_util import TernarizeOp
+from weight_scale import weight_scale
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
@@ -66,6 +67,10 @@ print('==> Building model..')
 # net = ShuffleNetG2()
 # net = SENet18()
 net = resnet.ResNet18()
+for m in net.modules():
+    if isinstance(m, nn.Conv2d):
+        m = weight_scale(m)
+
 net = net.to(device)
 if device == 'cuda':
     net = torch.nn.DataParallel(net)
@@ -82,7 +87,7 @@ if args.resume:
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-tern_op = TernarizeOp(net)
+tern_op = TernarizeOp(net, True)
 
 # Training
 def train(epoch):
@@ -106,8 +111,9 @@ def train(epoch):
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-            % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        if batch_idx % 20 ==0:
+            progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+                % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
 def test(epoch):
     global best_acc

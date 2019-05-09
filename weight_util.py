@@ -53,12 +53,13 @@ class TernarizeOp:
         for index in range(self.num_of_params):
             tensor = self.target_modules[index].data
             delta = self.Delta(tensor)
-            s = tensor.size()
+            #s = tensor.size()
             position = tensor.abs().gt(delta).type(torch.cuda.FloatTensor)
-            alpha = position.mul(tensor)
-            n = position.sum(3, keepdim=True).sum(2, keepdim=True).sum(1, keepdim=True)
-            alpha = alpha.norm(1, 3, keepdim=True).sum(2, keepdim=True).sum(1, keepdim=True).div(n).expand(s)
-            self.target_modules[index].data = self.target_modules[index].data.sign().mul(alpha.mul(position))
+            #alpha = position.mul(tensor)
+            #n = position.sum(3, keepdim=True).sum(2, keepdim=True).sum(1, keepdim=True)
+            #alpha = alpha.norm(1, 3, keepdim=True).sum(2, keepdim=True).sum(1, keepdim=True).div(n).expand(s)
+            #self.target_modules[index].data = self.target_modules[index].data.sign().mul(alpha.mul(position))
+            self.target_modules[index].data = self.target_modules[index].data.sign().mul(position)
 
     def Delta(self, tensor):
         n = tensor[0].nelement()

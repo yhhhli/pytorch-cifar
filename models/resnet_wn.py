@@ -19,6 +19,14 @@ def ActQuantization(x):
     x = x.mul(k)
     return (xhard-x).detach() + x
 
+def PowerQuantization(x):
+    k = 1.286/4
+    x = x.clamp(max=4*k)
+    xhard = torch.where(x>0.5*k, k, 0)
+    xhard = torch.where(xhard>1.5*k, 2*k, xhard)
+    xhard = torch.where(xhard>3*k, 4*k, xhard)
+    return (xhard-x).detach()+x
+
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -36,24 +44,14 @@ class BasicBlock(nn.Module):
                 nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(self.expansion*planes)
             )
-        self.gamma1 = torch.nn.Parameter(torch.tensor([1.0]))
-        self.beta1  = torch.nn.Parameter(torch.tensor([0.0]))
-        self.gamma2 = torch.nn.Parameter(torch.tensor([1.0]))
-        self.beta2 = torch.nn.Parameter(torch.tensor([0.0]))
-        self.gamma3 = torch.nn.Parameter(torch.tensor([1.0]))
-        self.beta3 = torch.nn.Parameter(torch.tensor([0.0]))
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
         out = ActQuantization(out)
-        out = out * self.gamma1 + self.beta1
         out = self.bn2(self.conv2(out))
-        out = ActQuantization(out)
-        out = out * self.gamma2 + self.beta2
         out += self.shortcut(x)
         out = F.relu(out)
         out = ActQuantization(out)
-        out = out * self.gamma3 + self.beta3
         return out
 
 
@@ -117,6 +115,7 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
+        out = ActQuantization(out)
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
